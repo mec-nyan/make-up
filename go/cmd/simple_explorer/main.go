@@ -6,6 +6,21 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	leftStyle = lipgloss.NewStyle().
+		Width(30).
+		Height(40).
+		Padding(1, 2, 1, 2)
+
+	rightStyle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#89dceb")).
+		Padding(1, 2).
+		Height(40).
+		Width(50)
 )
 
 type (
@@ -32,7 +47,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return m.list.View()
+	left := leftStyle.Render(m.list.View())
+
+	desc := ""
+	if item := m.selectedItem(); item != nil {
+		desc = item.Desc
+	}
+	right := rightStyle.Render(desc)
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+}
+
+func (m model) selectedItem() *Item {
+	if selected, ok := m.list.SelectedItem().(Item); ok {
+		return &selected
+	}
+	return nil
 }
 
 func getSampleItems() []Item {
@@ -54,8 +84,8 @@ func main() {
 		items = append(items, i)
 	}
 
-	const defaultWidth = 20
-	l := list.New(items, list.NewDefaultDelegate(), defaultWidth, 20)
+	const defaultWidth = 30
+	l := list.New(items, list.NewDefaultDelegate(), defaultWidth, 40)
 	l.Title = "Stuff"
 
 	m := model{list: l}
