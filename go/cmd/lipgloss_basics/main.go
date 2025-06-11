@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -31,9 +33,32 @@ var palette = map[colorName]hexValue{
 	"base":      "#1e1e2e",
 }
 
-func main() {
+type button struct {
+	content string
+	width   int
+}
 
-	var buttons []string
+type model struct {
+	width int
+}
+
+func (m model) Init() tea.Cmd {
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		return m, tea.Quit
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+	}
+	return m, nil
+}
+
+func (m model) View() string {
+
+	var buttons []button
 
 	for name, value := range palette {
 		if name == "base" {
@@ -45,11 +70,47 @@ func main() {
 			Padding(1, 2).
 			Margin(1, 0, 0, 1).
 			Render(capitalise(name))
-		buttons = append(buttons, btn)
+		w := lipgloss.Width(btn)
+		buttons = append(buttons, button{content: btn, width: w})
 	}
 
-	fmt.Println(lipgloss.JoinHorizontal(lipgloss.Top, buttons[:len(buttons)/2]...))
-	fmt.Println(lipgloss.JoinHorizontal(lipgloss.Top, buttons[len(buttons)/2:]...) + "\n")
+	var output []string
+
+	occupied := 0
+	var row []button
+	for _, btn := range buttons {
+		if occupied+btn.width < m.width {
+			occupied += btn.width
+			row = append(row, btn)
+		} else {
+			var textRows []string
+			for _, r := range row {
+				textRows = append(textRows, r.content)
+			}
+			output = append(output, lipgloss.JoinHorizontal(lipgloss.Top, textRows...)) 
+			row = nil
+			occupied = 0
+		}
+	}
+
+	if len(row) > 0 {
+		var textRows []string
+		for _, r := range row {
+			textRows = append(textRows, r.content)
+		}
+		output = append(output, lipgloss.JoinHorizontal(lipgloss.Top, textRows...)) 
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, output...)
+}
+
+func main() {
+	p := tea.NewProgram(model{}, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Println("Oops!")
+		os.Exit(1)
+	}
+
 }
 
 func capitalise(s string) string {
