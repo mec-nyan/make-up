@@ -61,12 +61,20 @@ func (m model) View() string {
 	leftWidth := m.width / 2
 	rightWidth := m.width - leftWidth
 
-	innerLeftWidth := leftWidth - leftStyle.GetHorizontalFrameSize()
-	innerLeftHeight := m.height - leftStyle.GetVerticalFrameSize()
+	innerLeftWidth := leftWidth - leftStyle.GetHorizontalFrameSize() +
+	leftStyle.GetPaddingLeft() + leftStyle.GetPaddingRight()
+
+	innerLeftHeight := m.height - leftStyle.GetVerticalFrameSize() +
+	leftStyle.GetPaddingTop() + leftStyle.GetPaddingBottom()
+
 	leftStyle = leftStyle.Width(innerLeftWidth).Height(innerLeftHeight)
 
-	innerRightWidth := rightWidth - rightStyle.GetHorizontalFrameSize()
-	innerRightHeight := m.height - rightStyle.GetVerticalFrameSize()
+	innerRightWidth := rightWidth - rightStyle.GetHorizontalFrameSize() +
+	rightStyle.GetPaddingLeft() + rightStyle.GetPaddingRight()
+
+	innerRightHeight := m.height - rightStyle.GetVerticalFrameSize() +
+	rightStyle.GetPaddingTop() + rightStyle.GetPaddingBottom()
+
 	rightStyle = rightStyle.Width(innerRightWidth).Height(innerRightHeight)
 
 	left := leftStyle.Render(m.list.View())
