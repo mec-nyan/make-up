@@ -11,15 +11,31 @@ import (
 )
 
 var (
+	rounded = lipgloss.Border{
+		Top:          "━",
+		Bottom:       "━",
+		Left:         "┃",
+		Right:        "┃",
+		TopLeft:      "╭",
+		TopRight:     "╮",
+		BottomLeft:   "╰",
+		BottomRight:  "╯",
+		MiddleLeft:   "",
+		MiddleRight:  "",
+		Middle:       "",
+		MiddleTop:    "",
+		MiddleBottom: "",
+	}
+
 	leftStyle = lipgloss.NewStyle().
 		// Margin(1, 2).
 		Padding(1, 2)
 
 	rightStyle = lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder()).
+			Border(rounded).
 			BorderForeground(lipgloss.Color("#cba6f7")).
-		// Margin(1, 2).
-		Padding(1, 2)
+			Margin(1, 1, 1, 0).
+			Padding(1, 2)
 )
 
 type (
@@ -58,24 +74,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	leftWidth := m.width / 2
+	leftWidth := m.width / 3
 	rightWidth := m.width - leftWidth
 
 	innerLeftWidth := leftWidth - leftStyle.GetHorizontalFrameSize() +
-	leftStyle.GetPaddingLeft() + leftStyle.GetPaddingRight()
+		leftStyle.GetPaddingLeft() + leftStyle.GetPaddingRight()
 
 	innerLeftHeight := m.height - leftStyle.GetVerticalFrameSize() +
-	leftStyle.GetPaddingTop() + leftStyle.GetPaddingBottom()
+		leftStyle.GetPaddingTop() + leftStyle.GetPaddingBottom()
 
 	leftStyle = leftStyle.Width(innerLeftWidth).Height(innerLeftHeight)
 
 	innerRightWidth := rightWidth - rightStyle.GetHorizontalFrameSize() +
-	rightStyle.GetPaddingLeft() + rightStyle.GetPaddingRight()
+		rightStyle.GetPaddingLeft() + rightStyle.GetPaddingRight()
 
-	innerRightHeight := m.height - rightStyle.GetVerticalFrameSize() +
-	rightStyle.GetPaddingTop() + rightStyle.GetPaddingBottom()
+	// innerRightHeight := m.height - rightStyle.GetVerticalFrameSize() +
+	// 	rightStyle.GetPaddingTop() + rightStyle.GetPaddingBottom()
 
-	rightStyle = rightStyle.Width(innerRightWidth).Height(innerRightHeight)
+	rightStyle = rightStyle.Width(innerRightWidth)
 
 	left := leftStyle.Render(m.list.View())
 
