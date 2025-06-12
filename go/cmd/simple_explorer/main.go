@@ -12,16 +12,14 @@ import (
 
 var (
 	leftStyle = lipgloss.NewStyle().
-			Width(30).
-			Height(40).
-			Padding(1, 2, 1, 2)
+		// Margin(1, 2).
+		Padding(1, 2)
 
 	rightStyle = lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("#89dceb")).
-			Padding(1, 2).
-			Height(40).
-			Width(50)
+			BorderForeground(lipgloss.Color("#cba6f7")).
+		// Margin(1, 2).
+		Padding(1, 2)
 )
 
 type (
@@ -29,7 +27,8 @@ type (
 		Name, Desc string
 	}
 	model struct {
-		list list.Model
+		list          list.Model
+		width, height int
 	}
 )
 
@@ -42,12 +41,34 @@ func (i Item) FilterValue() string { return i.Name }
 func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+
+		m.list.SetHeight(m.height - leftStyle.GetVerticalFrameSize())
+		m.list.SetWidth(m.width/2 - leftStyle.GetHorizontalFrameSize())
+
+		return m, nil
+	default:
+		var cmd tea.Cmd
+		m.list, cmd = m.list.Update(msg)
+		return m, cmd
+	}
 }
 
 func (m model) View() string {
+	leftWidth := m.width / 2
+	rightWidth := m.width - leftWidth
+
+	innerLeftWidth := leftWidth - leftStyle.GetHorizontalFrameSize()
+	innerLeftHeight := m.height - leftStyle.GetVerticalFrameSize()
+	leftStyle = leftStyle.Width(innerLeftWidth).Height(innerLeftHeight)
+
+	innerRightWidth := rightWidth - rightStyle.GetHorizontalFrameSize()
+	innerRightHeight := m.height - rightStyle.GetVerticalFrameSize()
+	rightStyle = rightStyle.Width(innerRightWidth).Height(innerRightHeight)
+
 	left := leftStyle.Render(m.list.View())
 
 	desc := ""
@@ -109,8 +130,7 @@ func main() {
 		items = append(items, i)
 	}
 
-	const defaultWidth = 30
-	l := list.New(items, simpleDelegate{}, defaultWidth, 40)
+	l := list.New(items, simpleDelegate{}, 0, 0)
 	l.SetShowHelp(false)
 	l.SetShowTitle(false)
 	l.SetShowPagination(false)
