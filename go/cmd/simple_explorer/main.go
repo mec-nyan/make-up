@@ -6,7 +6,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/list"
 )
 
 var (
@@ -27,23 +26,27 @@ var (
 	}
 
 	leftStyle = lipgloss.NewStyle().
-		// Margin(1, 2).
-		Padding(1, 2)
+			Margin(1).
+			Padding(1, 2)
 
 	rightStyle = lipgloss.NewStyle().
 			Border(rounded).
 			BorderForeground(lipgloss.Color("#cba6f7")).
 			Margin(1, 1, 1, 0).
 			Padding(1, 2)
+
+	hiliStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#89b4fa"))
 )
 
 type (
 	Item struct {
 		Name, Desc string
 	}
+
 	model struct {
-		list          list.List
-		width, height int
+		list                   []Item
+		width, height, current int
 	}
 )
 
@@ -62,9 +65,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 		return m, nil
-	default:
-		return m, tea.Quit
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "esc":
+			return m, tea.Quit
+		case "j":
+			if m.current < len(m.list)-1 {
+				m.current++
+			}
+		case "k":
+			if m.current > 0 {
+				m.current--
+			}
+		}
 	}
+	return m, nil
 }
 
 func (m model) View() string {
@@ -87,19 +102,24 @@ func (m model) View() string {
 
 	rightStyle = rightStyle.Width(innerRightWidth)
 
-	left := leftStyle.Render(m.list.String())
+	var list string
+	var desc string
+	for i, elem := range m.list {
+		if i == m.current {
+			desc = elem.Description()
+			list += hiliStyle.Render("> " + elem.Name)
+		} else {
+			list += "  " + elem.Name
+		}
 
-	desc := ""
-	if item := m.selectedItem(); item != nil {
-		desc = item.Desc
+		list += "\n\n"
+
 	}
+
+	left := leftStyle.Render(list)
 	right := rightStyle.Render(desc)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
-}
-
-func (m model) selectedItem() *Item {
-	return nil
 }
 
 func getSampleItems() []Item {
@@ -115,21 +135,9 @@ func getSampleItems() []Item {
 	}
 }
 
-func SelectedEnum(_ list.Items, i int) string {
-	if i == 0 {
-		return "> "
-	}
-	return ""
-}
-
 func main() {
-	items := list.New()
-	for _, i := range getSampleItems() {
-		items.Item(i.Name)
-	}
-	items.Enumerator(SelectedEnum)
 
-	m := model{list: *items}
+	m := model{list: getSampleItems()}
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
