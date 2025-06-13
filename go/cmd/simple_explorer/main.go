@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/list"
 )
 
 var (
@@ -43,7 +42,7 @@ type (
 		Name, Desc string
 	}
 	model struct {
-		list          list.Model
+		list          list.List
 		width, height int
 	}
 )
@@ -62,14 +61,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		m.list.SetHeight(m.height - leftStyle.GetVerticalFrameSize())
-		m.list.SetWidth(m.width/2 - leftStyle.GetHorizontalFrameSize())
-
 		return m, nil
 	default:
-		var cmd tea.Cmd
-		m.list, cmd = m.list.Update(msg)
-		return m, cmd
+		return m, tea.Quit
 	}
 }
 
@@ -93,7 +87,7 @@ func (m model) View() string {
 
 	rightStyle = rightStyle.Width(innerRightWidth)
 
-	left := leftStyle.Render(m.list.View())
+	left := leftStyle.Render(m.list.String())
 
 	desc := ""
 	if item := m.selectedItem(); item != nil {
@@ -105,9 +99,6 @@ func (m model) View() string {
 }
 
 func (m model) selectedItem() *Item {
-	if selected, ok := m.list.SelectedItem().(Item); ok {
-		return &selected
-	}
 	return nil
 }
 
@@ -124,44 +115,21 @@ func getSampleItems() []Item {
 	}
 }
 
-type simpleDelegate struct{}
-
-func (d simpleDelegate) Height() int { return 1 }
-
-func (d simpleDelegate) Spacing() int { return 1 }
-
-func (d simpleDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-
-func (d simpleDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	it, ok := item.(Item)
-	if !ok {
-		return
+func SelectedEnum(_ list.Items, i int) string {
+	if i == 0 {
+		return "> "
 	}
-
-	str := it.Title()
-	if index == m.Index() {
-		str = lipgloss.NewStyle().Foreground(lipgloss.Color("#fab387")).Render("> " + str)
-	} else {
-		str = "  " + str
-	}
-
-	fmt.Fprintf(w, "%s", str)
+	return ""
 }
 
 func main() {
-	var items []list.Item
+	items := list.New()
 	for _, i := range getSampleItems() {
-		items = append(items, i)
+		items.Item(i.Name)
 	}
+	items.Enumerator(SelectedEnum)
 
-	l := list.New(items, simpleDelegate{}, 0, 0)
-	l.SetShowHelp(false)
-	l.SetShowTitle(false)
-	l.SetShowPagination(false)
-	l.SetShowStatusBar(false)
-	l.Title = "Stuff"
-
-	m := model{list: l}
+	m := model{list: *items}
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
